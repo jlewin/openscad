@@ -30,6 +30,8 @@ std::string LocalScope::dump(const std::string &indent) const
 	BOOST_FOREACH(const FunctionContainer::value_type &f, this->functions) {
 		dump << f.second->dump(indent, f.first);
 	}
+
+    // jlewin - this looks at lot like the iteration I want
 	BOOST_FOREACH(const AbstractModuleContainer::value_type &m, this->modules) {
 		dump << m.second->dump(indent, m.first);
 	}

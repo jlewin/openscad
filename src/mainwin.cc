@@ -173,9 +173,10 @@ MainWindow::MainWindow(const QString &filename)
 					this, SLOT(actionRenderDone(shared_ptr<const Geometry>)));
 #endif
 
+
 	top_ctx.registerBuiltin();
 
-	this->openglbox = NULL;
+    this->openglbox = NULL;
 	root_module = NULL;
 	absolute_root_node = NULL;
 	this->root_chain = NULL;
@@ -367,10 +368,9 @@ MainWindow::MainWindow(const QString &filename)
 	connect(this->helpActionManual, SIGNAL(triggered()), this, SLOT(helpManual()));
 	connect(this->helpActionLibraryInfo, SIGNAL(triggered()), this, SLOT(helpLibrary()));
 
+    setCurrentOutput();
 
-	setCurrentOutput();
-
-	PRINT(helptitle);
+    PRINT(helptitle);
 	PRINT(copyrighttext);
 	PRINT("");
 

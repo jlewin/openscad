@@ -78,6 +78,8 @@ void Context::setVariables(const AssignmentList &args,
 													 const EvalContext *evalctx)
 {
 	BOOST_FOREACH(const Assignment &arg, args) {
+        // jlewin
+        // PRINTB("****** Uses: %s", arg.first);
 		set_variable(arg.first, arg.second ? arg.second->evaluate(this->parent) : Value());
 	}
 

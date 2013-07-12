@@ -90,6 +90,19 @@ void ModuleContext::registerBuiltin()
 	}
 
 	this->set_constant("PI",Value(M_PI));
+
+
+    // jlewin
+    // PRINTB("REGISTERBUILTIN %s", "fun");
+
+    /*
+    BOOST_FOREACH(const LocalScope::AbstractModuleContainer::value_type &m, scope.modules) {
+        PRINTB("Calling: %s", m.first);
+
+        const AbstractModule *foundm = this->findLocalModule(m.first);
+        if (foundm && m.first != "rotate_extrude") foundm->instantiate(this, NULL, evalctx);
+    }*/
+
 }
 
 const AbstractFunction *ModuleContext::findLocalFunction(const std::string &name) const
@@ -132,7 +145,9 @@ Value ModuleContext::evaluate_function(const std::string &name, const EvalContex
 
 AbstractNode *ModuleContext::instantiate_module(const ModuleInstantiation &inst, const EvalContext *evalctx) const
 {
-	const AbstractModule *foundm = this->findLocalModule(inst.name());
+    // jlewin - this looks like a good example of how to find and invoke a module/builtin
+    //PRINTB("**** Invoking: %s", inst.name());
+    const AbstractModule *foundm = this->findLocalModule(inst.name());
 	if (foundm) return foundm->instantiate(this, &inst, evalctx);
 
 	return Context::instantiate_module(inst, evalctx);

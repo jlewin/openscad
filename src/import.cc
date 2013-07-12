@@ -337,7 +337,10 @@ std::string ImportNode::name() const
 
 void register_builtin_import()
 {
-	Builtins::init("import_stl", new ImportModule(TYPE_STL));
+    // jlewin
+    // PRINTB("REGISTER_IMPORTS %s", "fun");
+
+    Builtins::init("import_stl", newfs ImportModule(TYPE_STL));
 	Builtins::init("import_off", new ImportModule(TYPE_OFF));
 	Builtins::init("import_dxf", new ImportModule(TYPE_DXF));
 	Builtins::init("import", new ImportModule());
