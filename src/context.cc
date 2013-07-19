@@ -78,8 +78,8 @@ void Context::setVariables(const AssignmentList &args,
 													 const EvalContext *evalctx)
 {
 	BOOST_FOREACH(const Assignment &arg, args) {
-        // jlewin
-        // PRINTB("****** Uses: %s", arg.first);
+        // jlewin - log named argument access
+        PRINTB("====:%s", arg.first);
 		set_variable(arg.first, arg.second ? arg.second->evaluate(this->parent) : Value());
 	}
 
@@ -120,8 +120,12 @@ Value Context::lookup_variable(const std::string &name, bool silent) const
 		return Value();
 	}
 	if (is_config_variable(name)) {
-		for (int i = this->ctx_stack->size()-1; i >= 0; i--) {
+        // jlewin - log named variable access (not necessarily an argument, could be a context value)
+        PRINTB("----:%s", name);
+
+        for (int i = this->ctx_stack->size()-1; i >= 0; i--) {
 			const ValueMap &confvars = ctx_stack->at(i)->config_variables;
+
 			if (confvars.find(name) != confvars.end())
 				return confvars.find(name)->second;
 		}

@@ -95,6 +95,8 @@ Value Function::evaluate(const Context *ctx, const EvalContext *evalctx) const
 
 std::string Function::dump(const std::string &indent, const std::string &name) const
 {
+	// jlewin - it looks like whoever wrote this believed functions used a definition_list 
+	// but from what I've seen that isn't true... Needs more research
 	std::stringstream dump;
 	dump << indent << "function " << name << "(";
 	for (size_t i=0; i < definition_arguments.size(); i++) {

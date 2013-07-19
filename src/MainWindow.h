@@ -113,6 +113,7 @@ private slots:
 	void actionSaveAs();
 	void actionReload();
 	void actionShowLibraryFolder();
+    void actionDumpLangScript();
 
 	void instantiateRoot();
 	void compileDone(bool didchange);

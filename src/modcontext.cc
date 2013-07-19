@@ -137,6 +137,8 @@ const AbstractModule *ModuleContext::findLocalModule(const std::string &name) co
 
 Value ModuleContext::evaluate_function(const std::string &name, const EvalContext *evalctx) const
 {
+	// jlewin - log the executing function name
+	PRINTB("~~:%s", name);
 	const AbstractFunction *foundf = findLocalFunction(name);
 	if (foundf) return foundf->evaluate(this, evalctx);
 
@@ -145,8 +147,8 @@ Value ModuleContext::evaluate_function(const std::string &name, const EvalContex
 
 AbstractNode *ModuleContext::instantiate_module(const ModuleInstantiation &inst, const EvalContext *evalctx) const
 {
-    // jlewin - this looks like a good example of how to find and invoke a module/builtin
-    //PRINTB("**** Invoking: %s", inst.name());
+    // jlewin - log the executing module name
+    PRINTB("==:%s", inst.name());
     const AbstractModule *foundm = this->findLocalModule(inst.name());
 	if (foundm) return foundm->instantiate(this, &inst, evalctx);
 

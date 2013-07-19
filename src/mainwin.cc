@@ -243,6 +243,7 @@ MainWindow::MainWindow(const QString &filename)
 	connect(this->fileActionReload, SIGNAL(triggered()), this, SLOT(actionReload()));
 	connect(this->fileActionQuit, SIGNAL(triggered()), this, SLOT(quit()));
 	connect(this->fileShowLibraryFolder, SIGNAL(triggered()), this, SLOT(actionShowLibraryFolder()));
+    connect(this->fileDumpLangScript, SIGNAL(triggered()), this, SLOT(actionDumpLangScript()));
 #ifndef __APPLE__
 	QList<QKeySequence> shortcuts = this->fileActionSave->shortcuts();
 	shortcuts.push_back(QKeySequence(Qt::Key_F2));
@@ -1131,6 +1132,58 @@ void MainWindow::actionSaveAs()
 		setFileName(new_filename);
 		actionSave();
 	}
+}
+
+void MainWindow::actionDumpLangScript()
+{
+	// jlewin
+	std::vector<std::string> list;
+
+    char v1 = 'a';
+    char v2 = 'a';
+
+	// Loop over registered functions, dumping signatures for x(1) through x(1,2,3,4,5,6,7,8,9)
+	// to identify which signatures are valid and which functions take any number of params
+	BOOST_FOREACH(const Builtins::FunctionContainer::value_type &f, Builtins::instance()->getGlobalScope().functions ) {
+
+		int c = 0;
+		std::vector<std::string> args;
+
+		std::string gah[] = {"1", "2", "3", "4", "5", "6", "7", "8", "9"};
+
+		for(int i = 0; i < 10; i++)
+		{
+			// skip variabled named 'if' due to keyword conflict
+			if(v1 == 'i' && v2 == 'f'){
+				v2++;
+			}
+
+			std::string joined = boost::algorithm::join(args, ",");
+
+			list.push_back(str(boost::format("%s%s = %s(%s);") % v1 % v2++ % f.first % joined));
+
+			args.push_back(gah[c++]);
+
+			if (v2 > 'z')
+			{
+				v2 = 'a';
+				v1++;
+			}
+		}
+	}
+
+	// jlewin - Loop over registered modules dumping a single call for each
+	BOOST_FOREACH(const Builtins::ModuleContainer::value_type &m, Builtins::instance()->getGlobalScope().modules ) {
+
+		if(m.first == "if")
+			list.push_back("if(1) { circle();} else {square();}");
+		else
+			list.push_back(str(boost::format("%s();") % m.first));
+	}
+
+	// Join and dump the results separated by newlines into the editor
+	std::string joined = boost::algorithm::join(list, "\r\n ");
+	editor->setPlainText(joined.c_str());
 }
 
 void MainWindow::actionShowLibraryFolder()

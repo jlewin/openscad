@@ -16,6 +16,8 @@ const std::string &EvalContext::getArgName(size_t i) const
 
 Value EvalContext::getArgValue(size_t i, const Context *ctx) const
 {
+	// jlewin - log indexed argument access. Typically used by Function calls
+	PRINTB("~~~~:%i", (i + 1));
 	assert(i < this->eval_arguments.size());
 	const Assignment &arg = this->eval_arguments[i];
 	return arg.second ? arg.second->evaluate(ctx ? ctx : this) : Value();
