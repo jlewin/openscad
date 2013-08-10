@@ -29,6 +29,8 @@
 #include "polyset.h"
 #include "csgterm.h"
 #include "stl-utils.h"
+#include "printutils.h"
+
 #ifdef ENABLE_OPENCSG
 #  include <opencsg.h>
 #endif
@@ -61,12 +63,27 @@ void OpenCSGRenderer::draw(bool /*showfaces*/, bool showedges) const
 	if (this->root_chain) {
 		GLint *shaderinfo = this->shaderinfo;
 		if (!shaderinfo[0]) shaderinfo = NULL;
+
+        // jlewinx1
+        PRINTB("-------------- draw: showedges(%s)", showedges);
+
 		renderCSGChain(this->root_chain, showedges ? shaderinfo : NULL, false, false);
+
+        PRINT("**** Root Chain ****");
+        PRINT(this->root_chain->dump());
+
 		if (this->background_chain) {
+
+            PRINT("**** Background Chain ****");
+            PRINT(this->background_chain->dump());
+
 			renderCSGChain(this->background_chain, showedges ? shaderinfo : NULL, false, true);
 		}
 		if (this->highlights_chain) {
-			renderCSGChain(this->highlights_chain, showedges ? shaderinfo : NULL, true, false);
+            PRINT("**** Highlights Chain ****");
+            PRINT(this->highlights_chain->dump());
+
+            renderCSGChain(this->highlights_chain, showedges ? shaderinfo : NULL, true, false);
 		}
 	}
 }
@@ -74,23 +91,43 @@ void OpenCSGRenderer::draw(bool /*showfaces*/, bool showedges) const
 void OpenCSGRenderer::renderCSGChain(CSGChain *chain, GLint *shaderinfo, 
 																		 bool highlight, bool background) const
 {
+    // jlewinx1
+    PRINTB("-------------- renderCSGChain: highlight(%i)  background(%i)", highlight % background);
+
 	std::vector<OpenCSG::Primitive*> primitives;
 	size_t j = 0;
+
+    // Continuously loop incrementing i (loop breaks when last == true)
 	for (size_t i = 0;; i++) {
 		bool last = i == chain->objects.size();
 		const CSGChainObject &i_obj = last ? chain->objects[i-1] : chain->objects[i];
+
+		// The last variable confuses me and seems to work the opposite of what I'd expect...
 		if (last || i_obj.type == CSGTerm::TYPE_UNION) {
 			if (j+1 != i) {
 				 OpenCSG::render(primitives);
+
+                 // jlewin
+                 PRINT("glDepthFunc");
+
 				glDepthFunc(GL_EQUAL);
 			}
 			if (shaderinfo) glUseProgram(shaderinfo[0]);
 			for (; j < i; j++) {
 				const CSGChainObject &j_obj = chain->objects[j];
 				const Color4f &c = j_obj.color;
+
+                // jlewin
+                PRINT("glPushMatrix");
+
 				glPushMatrix();
 				glMultMatrixd(j_obj.matrix.data());
-				csgmode_e csgmode = j_obj.type == CSGTerm::TYPE_DIFFERENCE ? CSGMODE_DIFFERENCE : CSGMODE_NORMAL;
+
+                // jlewin
+                PRINT("glMultMatrixd");
+
+                csgmode_e csgmode = j_obj.type == CSGTerm::TYPE_DIFFERENCE ? CSGMODE_DIFFERENCE : CSGMODE_NORMAL;
+
 				ColorMode colormode = COLORMODE_NONE;
 				if (background) {
 					if (j_obj.flag & CSGTerm::FLAG_HIGHLIGHT) {
@@ -120,13 +157,24 @@ void OpenCSGRenderer::renderCSGChain(CSGChain *chain, GLint *shaderinfo,
 
 				setColor(colormode, c.data(), shaderinfo);
 
-				render_surface(j_obj.geom, csgmode, j_obj.matrix, shaderinfo);
+                // jlewin
+                PRINT("polyset->render_surface");
+
+                render_surface(j_obj.geom, csgmode, j_obj.matrix, shaderinfo);
+
+                // jlewin
+                PRINT("glPopMatrix");
+
 				glPopMatrix();
 			}
 			if (shaderinfo) glUseProgram(0);
 			for (unsigned int k = 0; k < primitives.size(); k++) {
 				delete primitives[k];
 			}
+
+            // jlewin
+            PRINT("glDepthFunc");
+
 			glDepthFunc(GL_LEQUAL);
 			primitives.clear();
 		}

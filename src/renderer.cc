@@ -3,9 +3,14 @@
 #include "Geometry.h"
 #include "polyset.h"
 #include "Polygon2d.h"
+#include "printutils.h"
 
 bool Renderer::getColor(Renderer::ColorMode colormode, Color4f &col) const
 {
+    // Why are these values hardcoded
+    // Why arent' the render settings used
+    // How do these trump the render settings?
+    bool customColors = false;
 	switch (colormode) {
 	case COLORMODE_NONE:
 		return false;
@@ -17,10 +22,16 @@ bool Renderer::getColor(Renderer::ColorMode colormode, Color4f &col) const
 		col = RenderSettings::inst()->color(RenderSettings::OPENCSG_FACE_BACK_COLOR);
 		break;
 	case COLORMODE_HIGHLIGHT:
-		col.setRgb(255, 81, 81, 128);
+		if(customColors)
+			col.setRgb(76, 255, 0, 128);
+		else
+			col.setRgb(255, 81, 81, 128);
 		break;
 	case COLORMODE_BACKGROUND:
-    col.setRgb(180, 180, 180, 128);
+		if(customColors)
+			col.setRgb(255, 0, 110, 128);
+		else
+			col.setRgb(180, 180, 180, 128);
 		break;
 	case COLORMODE_MATERIAL_EDGES:
 		col.setRgb(255, 236, 94);
@@ -49,11 +60,20 @@ void Renderer::setColor(const float color[4], GLint *shaderinfo) const
 	if (c[1] < 0) c[1] = col[1];
 	if (c[2] < 0) c[2] = col[2];
 	if (c[3] < 0) c[3] = col[3];
+
+
+    // jlewin
+    PRINTB("glColor4fv: [%s, %s, %s, %s]", (c[0] * 255) % (c[1] * 255) % (c[2] * 255) % c[3]);
 	glColor4fv(c);
+
 #ifdef ENABLE_OPENCSG
 	if (shaderinfo) {
 		glUniform4f(shaderinfo[1], c[0], c[1], c[2], c[3]);
 		glUniform4f(shaderinfo[2], (c[0]+1)/2, (c[1]+1)/2, (c[2]+1)/2, 1.0);
+
+        // jlewin
+        PRINTB("glUniform4f: [%s, %s, %s, %s]", (c[0] * 255) % (c[1] * 255) % (c[2] * 255) % c[3]);
+
 	}
 #endif
 }

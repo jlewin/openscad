@@ -119,11 +119,16 @@ Preferences::Preferences(QWidget *parent) : QMainWindow(parent)
 
 	// 3D View pane
 	this->colorschemes["Cornfield"][RenderSettings::BACKGROUND_COLOR] = Color4f(0xff, 0xff, 0xe5);
-	this->colorschemes["Cornfield"][RenderSettings::OPENCSG_FACE_FRONT_COLOR] = Color4f(0xf9, 0xd7, 0x2c);
-	this->colorschemes["Cornfield"][RenderSettings::OPENCSG_FACE_BACK_COLOR] = Color4f(0x9d, 0xcb, 0x51);
-	this->colorschemes["Cornfield"][RenderSettings::CGAL_FACE_FRONT_COLOR] = Color4f(0xf9, 0xd7, 0x2c);
-	this->colorschemes["Cornfield"][RenderSettings::CGAL_FACE_BACK_COLOR] = Color4f(0x9d, 0xcb, 0x51);
-	this->colorschemes["Cornfield"][RenderSettings::CGAL_FACE_2D_COLOR] = Color4f(0x00, 0xbf, 0x99);
+
+    // F5
+    this->colorschemes["Cornfield"][RenderSettings::OPENCSG_FACE_FRONT_COLOR] = Color4f(255, 0, 0, 200); //0xf9, 0xd7, 0x2c);
+    this->colorschemes["Cornfield"][RenderSettings::OPENCSG_FACE_BACK_COLOR] = Color4f(255, 0, 0, 128);
+
+    // F6
+    this->colorschemes["Cornfield"][RenderSettings::CGAL_FACE_FRONT_COLOR] = Color4f(0, 0, 255, 200);
+    this->colorschemes["Cornfield"][RenderSettings::CGAL_FACE_BACK_COLOR] = Color4f(0, 255, 200);
+
+    this->colorschemes["Cornfield"][RenderSettings::CGAL_FACE_2D_COLOR] = Color4f(0x00, 0xbf, 0x99);
 	this->colorschemes["Cornfield"][RenderSettings::CGAL_EDGE_FRONT_COLOR] = Color4f(0xff, 0x00, 0x00);
 	this->colorschemes["Cornfield"][RenderSettings::CGAL_EDGE_BACK_COLOR] = Color4f(0xff, 0x00, 0x00);
 	this->colorschemes["Cornfield"][RenderSettings::CGAL_EDGE_2D_COLOR] = Color4f(0xff, 0x00, 0x00);

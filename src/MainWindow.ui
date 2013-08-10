@@ -257,7 +257,6 @@
     <addaction name="menuExamples"/>
     <addaction name="fileActionReload"/>
     <addaction name="fileDumpLangScript"/>
-    <addaction name="fileShowLibraryFolder"/>
     <addaction name="separator"/>
     <addaction name="fileActionClose"/>
     <addaction name="separator"/>
@@ -902,6 +901,8 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+[</string>
+   </property>
+  </action>
   <action name="fileDumpLangScript">
    <property name="text">
     <string>Dump Lang Script</string>
