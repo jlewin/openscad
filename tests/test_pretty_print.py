@@ -35,6 +35,8 @@ import hashlib
 import subprocess
 import time
 import platform
+import json
+
 try:
     from urllib.error import URLError
     from urllib.request import urlopen
@@ -240,14 +242,20 @@ class Templates(object):
         <p>start time: {startdate}</p>
         <p>end time: {enddate}</p>
 
+	<div class="tests">
+
         <h2>Image tests</h2>
         {image_tests}
 
         <h2>Text tests</h2>
         {text_tests}
 
+        
         <h2>build.make and flags.make</h2>
         {makefiles}
+
+	</div>
+
     </body></html>'''
 
     style = '''
@@ -268,34 +276,107 @@ class Templates(object):
             border: 2px solid black;
             padding: 0.14em;
         }
+       
+        .img,
+	    .text,
+    	.make {
+            padding: 4px;
+            margin: 10px 10px 15px;
+            background: #DBDBDB;
+            border-radius: 4px 4px;
+        }
+        
+        .tests pre {
+            overflow: auto;
+            background: #363434;
+            color: #00DF00;
+            padding: 10px;
+            margin: 0;
+        }
+
+        .img {
+            position: relative;
+        }
+
+        .img ul:hover {
+            opacity:0.2; filter:alpha(opacity=20);
+        }
+
+        .img ul {
+            position: absolute;
+            right: 0;
+            top: 0;
+            margin: 0;
+            padding: 1px;
+            background: #ACD4F3;
+            word-spacing: -3;
+            border-radius: 3px;
+        }
+
+        .img li {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: inline-block;
+            vertical-align: top;
+            position: relative;
+        }
+
+        .img img {
+            border-image-width: 0;
+        }
+
+        .img li p {
+            position: absolute;
+            text-shadow: 2px 2px 3px #bbb;
+            margin: 0;
+            padding: 0;
+            top: 18px;
+            width: 100%;
+            text-align: center;
+            color: #333;
+            font-family: monospace;
+
+        }
+        
+        .tests h1 {
+            margin: 0;
+            padding: 3px 5px;
+            /* background: #eee; */
+            font-size: 0.9em;
+            color: #666;
+        }
+       
+       
+
     </style>'''
 
-    image_template = '''<table>
-    <tbody>
-    <tr><td colspan="2">{test_name}</td></tr>
-    <tr><td> Expected image </td><td> Actual image </td></tr>
-    <tr><td> {expected} </td><td> {actual} </td></tr>
-    </tbody>
-    </table>
+    image_template = '''
+    <div class='img'>
+    <h1>{test_name}</h1>
+    <ul>
+      <li><p>Expected</p>{expected}</li>
+      <li><p>Actual</p>{actual}</li>
+    </ul>
+    <pre>{test_log}</pre>
+    </div>
 
-    <pre>
-{test_log}
-    </pre>
     '''
 
     text_template = '''
-    <span class="text-name">{test_name}</span>
-
+    <div class='test text'>
+    <h1>{test_name}</h1>
     <pre>
 {test_log}
     </pre>
+    </div>
     '''
 
     makefile_template = '''
-    <h4>{name}</h4>
-    <pre>
-        {text}
-    </pre>
+    <div class='make'>
+    <h1>{name}</h1>
+    <pre>{text}</pre>
+    </div>
     '''
 
     def __init__(self, **defaults):
@@ -319,6 +400,7 @@ def to_html(project_name, startdate, tests, enddate, sysinfo, sysid, makefiles):
     passed_tests = [test for test in tests if test.passed]
     failed_tests = [test for test in tests if not test.passed]
 
+    #report_tests = passed_tests
     report_tests = failed_tests
     if include_passed:
         report_tests = tests
@@ -330,6 +412,7 @@ def to_html(project_name, startdate, tests, enddate, sysinfo, sysid, makefiles):
 
     templates = Templates()
     for test in report_tests:
+
         if test.type in ('txt', 'ast', 'csg', 'term', 'echo'):
             text_test_count += 1
             templates.add('text_template', 'text_tests',
@@ -420,7 +503,20 @@ def main():
     global builddir, debug_test_pp
     global maxretry, dry, include_passed
     project_name = 'OpenSCAD'
-    
+
+    # Remove trailing comman and append closing array bracket
+    with open("results.jso_", 'rb+') as tempfile:
+        tempfile.seek(-2, os.SEEK_END)
+        tempfile.truncate()
+        tempfile.write("\n]")
+
+    try:
+        os.remove("results.json")
+    except OSError:
+        pass
+
+    os.rename("results.jso_", "results.json")
+
     if bool(os.getenv("TEST_GENERATE")):
         sys.exit(0)
     

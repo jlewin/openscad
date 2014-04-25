@@ -1,0 +1,24 @@
+After a three month break, trying to get back up to speed on this project. The changes made to the build process that allowed for the creation of json output aren't completely clear so I'll try to track my research across a clean rebuild in a fresh env to track down what's really needed.
+
+Command line examples:
+
+    ctest -R dxf --debug
+
+    ctest -R dxf
+
+    ctest -R .*issue54*
+
+    /usr/bin/python /home/jlewin/repo/openscad/tests/init.py
+
+    /usr/bin/python ../collect_results.py . jlewin.txt
+
+    /home/jlewin/repo/openscad/tests/build/openscad_nogui /home/jlewin/repo/openscad/tests/../testdata/scad/bugs/issue578.scad -o /home/jlewin/repo/openscad/tests/build/opencsgtest-output/issue578-actual.png
+
+
+Rebuild:
+    mkdir build
+    cd build
+    cmake ..
+    /usr/bin/python /home/jlewin/repo/openscad/tests/init.py
+    make
+    ctest -R dxf

@@ -25,6 +25,8 @@ import getopt
 import shutil
 import platform
 import string
+import json
+import time
 
 def initialize_environment():
     if not options.generate: options.generate = bool(os.getenv("TEST_GENERATE"))
@@ -39,6 +41,10 @@ def init_expected_filename():
         expected_dirname = options.expecteddir
     else:
         expected_dirname = expected_testname
+
+    # the expected filename is semi-convention driven but allows for override via options['expecteddir']
+
+    # otherwise the convention is [regressiondir]/[expected_dirname]/[filename]-expected.[suffix]
 
     expecteddir = os.path.join(options.regressiondir, expected_dirname)
     expectedfilename = os.path.join(expecteddir, options.filename + "-expected." + options.suffix)
@@ -85,17 +91,25 @@ def get_normalized_text(filename):
 def compare_text(expected, actual):
     return get_normalized_text(expected) == get_normalized_text(actual)
 
-def compare_default(resultfilename):
+def compare_default(resultfilename, info):
     print >> sys.stderr, 'diff text compare: '
     print >> sys.stderr, ' expected textfile: ', expectedfilename
     print >> sys.stderr, ' actual textfile: ', resultfilename
+
+
+    r = {'expected': expectedfilename, 'actual': resultfilename}
+
+    info['compare'] = { 'comparison': r, 'type':'diff' }
+
     if not compare_text(expectedfilename, resultfilename):
-	if resultfilename: 
+        r['matches'] = False
+        if resultfilename:
             execute_and_redirect("diff", [expectedfilename, resultfilename], sys.stderr)
         return False
+    r['matches'] = True
     return True
 
-def compare_png(resultfilename):
+def compare_png(resultfilename, info):
     compare_method = 'pixel'
     #args = [expectedfilename, resultfilename, "-alpha", "Off", "-compose", "difference", "-composite", "-threshold", "10%", "-blur", "2", "-threshold", "30%", "-format", "%[fx:w*h*mean]", "info:"]
     args = [expectedfilename, resultfilename, "-alpha", "Off", "-compose", "difference", "-composite", "-threshold", "10%", "-morphology", "Erode", "Square", "-format", "%[fx:w*h*mean]", "info:"]
@@ -114,32 +128,64 @@ def compare_png(resultfilename):
     msg = 'ImageMagick image comparison: '  + options.convert_exec + ' '+ ' '.join(args[2:])
     msg += '\n expected image: ' + expectedfilename + '\n'
     print >> sys.stderr, msg
+
+    r = { 'type': 'png' }
+
+    info['compare'] = r
+
     if not resultfilename:
-        print >> sys.stderr, "Error: Error during test image generation"
+        err_msg = "Error: Error during test image generation"
+        r['error'] = err_msg
+        print >> sys.stderr, err_msg
         return False
     print >> sys.stderr, ' actual image: ', resultfilename
 
+    # Execute the comparision
     (retval, output) = execute_and_redirect(options.convert_exec, args, subprocess.PIPE)
     print "Imagemagick return", retval, "output:", output
-    if retval == 0:
-	if compare_method=='pixel':
-            pixelerr = int(float(output.strip()))
-            if pixelerr < 32: return True
-            else: print >> sys.stderr, pixelerr, ' pixel errors'
-	elif compare_method=='NCC':
-            thresh = 0.95
-            ncc_err = float(output.strip())
-            if ncc_err > thresh or ncc_err==0.0: return True
-            else: print >> sys.stderr, ncc_err, ' Images differ: NCC comparison < ', thresh
-    return False
+    r['executed'] = {
+            'retval' : retval, 
+            'options': options.convert_exec + ' ' + ' '.join(args[2:]),
+            'expected': expectedfilename,
+            'actual': resultfilename,
+            'output': output.strip() }
 
-def compare_with_expected(resultfilename):
+    match = False; error_msg = ''; err = ''
+
+    if retval == 0:
+        if compare_method=='pixel':
+            err = int(float(output.strip()))
+            match = err < 32
+
+            if not match: 
+                print >> sys.stderr, err, ' pixel errors'
+                error_msg = str(err) + ' pixel errors'
+
+        elif compare_method=='NCC':
+            thresh = 0.95; err = float(output.strip())
+            match = err > thresh or err==0.0
+
+            if not match:
+                print >> sys.stderr, err, ' Images differ: NCC comparison < ', thresh
+                error_msg = str(err) + ' Images differ: NCC comparison < ' + str(thresh)
+    
+    r['comparison'] = { 
+        'err': err, 
+        'matches': match, 
+        'method': compare_method, 
+        'comparator': options.comparator,
+        'error_msg': error_msg}
+
+    return match
+
+def compare_with_expected(resultfilename, info):
+    
     if not options.generate:
-        if "compare_" + options.suffix in globals(): return globals()["compare_" + options.suffix](resultfilename)
-        else: return compare_default(resultfilename)
+        if "compare_" + options.suffix in globals(): return globals()["compare_" + options.suffix](resultfilename, info)
+        else: return compare_default(resultfilename, info)
     return True
 
-def run_test(testname, cmd, args):
+def run_test(testname, cmd, args, info):
     cmdname = os.path.split(options.cmd)[1]
 
     if options.generate: 
@@ -155,11 +201,34 @@ def run_test(testname, cmd, args):
     try:
         cmdline = [cmd] + args + [outputname]
         print cmdline
+
+        # actualfilename is the output/results file
+
+        start = time.time();
         proc = subprocess.Popen(cmdline, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        errtext = proc.communicate()[1]
+
+        results = proc.communicate()
+        errtext = results[1]
+        text = results[0]
+
+        deprecated = False
+        hasError = False
+
         if errtext != None and len(errtext) > 0:
             print >> sys.stderr, "Error output: " + errtext
+            deprecated = "DEPRECATED" in errtext
+            hasError = True
+
         outfile.close()
+        
+        info['subject'] = {
+            'exetime': time.time() - start,    # actual execution duration
+            'stderr': errtext,
+            'stdout': text,
+            'errorDetected': hasError,
+            'deprecated': deprecated,
+            'cmdline': cmdline  }
+
         if proc.returncode != 0:
             print >> sys.stderr, "Error: %s failed with return code %d" % (cmdname, proc.returncode)
             return None
@@ -172,6 +241,7 @@ def run_test(testname, cmd, args):
 class Options:
     def __init__(self):
         self.__dict__['options'] = {}
+        
     def __setattr__(self, name, value):
         self.options[name] = value
     def __getattr__(self, name):
@@ -233,7 +303,7 @@ if __name__ == '__main__':
 
     print >> sys.stderr, options.filename
     if not hasattr(options, "filename"):
-        print >> sys.stderr, "Filename cannot be deducted from arguments. Specify test filename using the -f option"
+        print >> sys.stderr, "Filename cannot be deduced from arguments. Specify test filename using the -f option"
         sys.exit(2)
 
     if not hasattr(options, "testname"):
@@ -247,8 +317,21 @@ if __name__ == '__main__':
 
     # Verify test environment
     verification = verify_test(options.testname, options.cmd)
+    testdata = {'options': options.options, 'name': options.testname + '_' + options.filename}
 
-    resultfile = run_test(options.testname, options.cmd, args[1:])
+    resultfile = run_test(options.testname, options.cmd, args[1:], testdata)
     if not resultfile: exit(1)
-    
-    if not verification or not compare_with_expected(resultfile): exit(1)
+
+    invalid = False
+
+    if not verification or not compare_with_expected(resultfile, testdata): 
+        invalid = True
+
+with open("results.jso_", "a") as outfile:
+    json.dump(testdata, outfile, separators=(',', ': '))
+    outfile.write(",\n")
+
+if invalid:
+    exit(1)
+
+
